@@ -781,13 +781,24 @@ class MiniWorldEnv(gym.Env):
                 if x0 == x1:
                     return False
 
-            m0 = (min_x - x0) / dx
-            m1 = (max_x - x0) / dx
+                m0 = (min_x - x0) / dx
+                m1 = (max_x - x0) / dx
 
-            if m1 < m0:
-                m0, m1 = m1, m0
+                if m1 < m0:
+                    m0, m1 = m1, m0
 
-            start_pos, end_pos = m0, m1
+                start_pos, end_pos = m0, m1
+            else:
+                if z0 == z1:
+                    return False
+
+                m0 = (min_z - z0) / dz
+                m1 = (max_z - z0) / dz
+
+                if m1 < m0:
+                    m0, m1 = m1, m0
+
+                start_pos, end_pos = m0, m1
 
             if start_pos < 0 or end_pos > e_len:
                 return False
