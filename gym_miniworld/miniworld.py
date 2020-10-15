@@ -768,6 +768,33 @@ class MiniWorldEnv(gym.Env):
         Connect two rooms along facing edges
         """
 
+        def check_edge(room, idx):
+            e_p0 = room.outline[idx]
+            e_p1 = room.outline[(idx + 1) % room.num_walls]
+            e_len = np.linalg.norm(e_p1 - e_p0)
+            e_dir = (e_p1 - e_p0) / e_len
+            x0, _, z0 = e_p0
+            x1, _, z1 = e_p1
+            dx, _, dz = e_dir
+
+            if min_x != None:
+                if x0 == x1:
+                    return False
+
+            m0 = (min_x - x0) / dx
+            m1 = (max_x - x0) / dx
+
+            if m1 < m0:
+                m0, m1 = m1, m0
+
+            start_pos, end_pos = m0, m1
+
+            if start_pos < 0 or end_pos > e_len:
+                return False
+
+            # everything seems to work out
+            return True
+
         def find_facing_edges():
             for idx_a in range(room_a.num_walls):
                 norm_a = room_a.edge_norms[idx_a]
@@ -785,6 +812,11 @@ class MiniWorldEnv(gym.Env):
                     if np.dot(norm_a, dir) > 0.05:
                         continue
 
+                    # check if the portal is within the edge
+                    if not check_edge(room=room_a, idx=idx_a) or not check_edge(room=room_b, idx=idx_b):
+                        continue
+
+                    print(idx_a, idx_b)
                     return idx_a, idx_b
 
             return None, None
