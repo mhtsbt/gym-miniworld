@@ -816,7 +816,6 @@ class MiniWorldEnv(gym.Env):
                     if not check_edge(room=room_a, idx=idx_a) or not check_edge(room=room_b, idx=idx_b):
                         continue
 
-                    print(idx_a, idx_b)
                     return idx_a, idx_b
 
             return None, None
