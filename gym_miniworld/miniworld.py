@@ -1,6 +1,7 @@
 import math
 from enum import IntEnum
 import numpy as np
+import tripy
 import gym
 from gym import spaces
 from .random import *
@@ -254,6 +255,7 @@ class Room:
         # Generate the ceiling vertices
         # Flip the ceiling vertex order because of backface culling
         self.ceil_verts = np.flip(self.outline, axis=0) + self.wall_height * Y_VEC
+
         self.ceil_texcs = gen_texcs_floor(
             self.ceil_tex,
             self.ceil_verts
@@ -388,8 +390,14 @@ class Room:
             self.wall_texcs = np.array([]).reshape(0, 2)
 
     def _render(self):
+        if len(self.outline) == 4:
+            return self._render_rect()
+        else:
+            return self._render_non_rect()
+
+    def _render_rect(self):
         """
-        Render the static elements of the room
+        Render the static elements of the room (if the room is a rect)
         """
 
         glColor3f(1, 1, 1)
@@ -412,6 +420,53 @@ class Room:
                 glTexCoord2f(*self.ceil_texcs[i, :])
                 glVertex3f(*self.ceil_verts[i, :])
             glEnd()
+
+        # Draw the walls
+        self.wall_tex.bind()
+        glBegin(GL_QUADS)
+        for i in range(self.wall_verts.shape[0]):
+            glNormal3f(*self.wall_norms[i, :])
+            glTexCoord2f(*self.wall_texcs[i, :])
+            glVertex3f(*self.wall_verts[i, :])
+        glEnd()
+
+    def _render_non_rect(self):
+        """
+        Render the static elements of the room (if the room is a possible non-convex polygon)
+        """
+
+        glColor3f(1, 1, 1)
+
+        # Draw the floor
+        self.floor_tex.bind()
+
+        triangles = tripy.earclip(list(map(lambda x: (x[0], x[2]), self.floor_verts)))
+        triangles_tex = tripy.earclip(list(map(lambda x: (x[0], x[1]), self.floor_texcs)))
+
+        for idx, triangle in enumerate(triangles):
+            glBegin(GL_TRIANGLES)
+            glNormal3f(0, 1, 0)
+
+            for i, point in enumerate(np.flip(triangle, axis=0)):
+                glTexCoord2f(*triangles_tex[idx][i])
+                glVertex3f(point[0], 0, point[1])
+            glEnd()
+
+        # Draw the ceiling
+        if not self.no_ceiling:
+
+            triangles = tripy.earclip(list(map(lambda x: (x[0], x[2]), self.ceil_verts)))
+            triangles_tex = tripy.earclip(list(map(lambda x: (x[0], x[1]), self.ceil_texcs)))
+
+            for idx, triangle in enumerate(triangles):
+                self.ceil_tex.bind()
+                glBegin(GL_TRIANGLES)
+                glNormal3f(0, -1, 0)
+
+                for i, point in enumerate(triangle):
+                    glTexCoord2f(*triangles_tex[idx][i])
+                    glVertex3f(point[0], DEFAULT_WALL_HEIGHT, point[1])
+                glEnd()
 
         # Draw the walls
         self.wall_tex.bind()
